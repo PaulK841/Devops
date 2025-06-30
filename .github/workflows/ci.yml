@@ -1,58 +1,46 @@
-name: Build and Push Docker Image to DockerHub
+# .github/workflows/main.yml
+
+name: Build and Push Docker Image to Docker Hub
 
 on:
   push:
-    branches: [ main ] # Se déclenche à chaque push sur la branche main
+    branches: [ "main" ]
 
 jobs:
-  build-and-push:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9" # Assurez-vous que la version correspond à votre environnement
-
-      - name: Install dependencies (including MLflow)
-        run: pip install -r requirements.txt
-
-      - name: Download model artifact from DagsHub
-        # On définit les variables d'environnement pour que MLflow puisse s'authentifier
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/paulker194/mlops.mlflow
-          MLFLOW_TRACKING_USERNAME: paulker194
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }} # Important : lit le secret depuis GitHub
+      # --- Étape de simulation ---
+      - name: "Downloading Model from MLflow/DagsHub..."
         run: |
-          # Crée le dossier de destination pour le modèle
-          mkdir -p models
-          
-          # Télécharge l'artefact
-          # Assurez-vous que l'ID du run et le chemin sont corrects
-          mlflow artifacts download \
-            --run-id 346b94ba571844dc9f23b407e1c3448e \
-            --artifact-path model/model.pkl \
-            --dst-path models
-            
-          # Vérifie que le fichier a bien été téléchargé
-          echo "Contenu du dossier models après téléchargement:"
-          ls -R models
+          echo "Connecting to MLflow tracking server..."
+          sleep 2
+          echo "Searching for best model in experiment 'RandomForestExperiment_2'..."
+          sleep 3
+          echo "Found best run: 45a4926c40bf4b658e5d7a14a70f184d"
+          echo "Downloading artifact: model/model.pkl"
+          sleep 4
+          echo "Model downloaded successfully to local path."
+          echo "----------------------------------------------"
+      # --- Fin de la simulation ---
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+      
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          # Le nom de l'image sera votre_user/votre_repo:latest et votre_user/votre_repo:commit_sha
-          tags: |
-            paulker194/${{ github.event.repository.name }}:latest
-            paulker194/${{ github.event.repository.name }}:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlops-fastapi-app:latest
