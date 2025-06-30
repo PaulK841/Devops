@@ -39,7 +39,7 @@ from sklearn.datasets import load_digits
 
 # get this code from dagshub
 import dagshub
-dagshub.init(repo_owner='arthur-gtgn', repo_name='mlflow-with-daghub', mlflow=True)
+dagshub.init(repo_owner='paulker194', repo_name='mlops', mlflow=True)
 
 data = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(data.data, data.target, test_size=0.2, random_state=42)
