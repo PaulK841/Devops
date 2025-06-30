@@ -1,14 +1,22 @@
-FROM python:3.12-slim
+# Dockerfile
 
+# Utilisez une version de Python stable comme 3.10 ou 3.11
+FROM python:3.10-slim
+
+# Définir le répertoire de travail DANS le conteneur
 WORKDIR /app
 
+# Copier et installer les dépendances
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY src/ ./src/
+# Copier TOUT votre code source
+# C'est la seule copie de code dont vous avez besoin
+COPY src/ .
 
-COPY models/random_forest_model/random_forest_model_2/model.pkl ./models/random_forest_model/random_forest_model_2/
-
+# Exposer le port
 EXPOSE 8000
 
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Lancer l'API. Uvicorn trouvera app.py car on a copié le dossier src/
+# dans le répertoire de travail /app
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
