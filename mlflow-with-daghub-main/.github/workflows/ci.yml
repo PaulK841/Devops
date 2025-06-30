@@ -1,48 +1,58 @@
-name: Build & Publish Docker Image
+name: Build and Push Docker Image to DockerHub
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # Se déclenche à chaque push sur la branche main
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
+      - name: Check out repository code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      - name: Set up Python & install MLflow
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
-      - name: Install MLflow CLI
-        run: pip install mlflow==2.22.0
+          python-version: "3.9" # Assurez-vous que la version correspond à votre environnement
+
+      - name: Install dependencies (including MLflow)
+        run: pip install -r requirements.txt
 
       - name: Download model artifact from DagsHub
+        # On définit les variables d'environnement pour que MLflow puisse s'authentifier
         env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/arthur-gtgn/mlflow-with-daghub.mlflow
+          MLFLOW_TRACKING_URI: https://dagshub.com/paulker194/mlops.mlflow
+          MLFLOW_TRACKING_USERNAME: paulker194
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }} # Important : lit le secret depuis GitHub
         run: |
-          mkdir -p models/random_forest_model
+          # Crée le dossier de destination pour le modèle
+          mkdir -p models
+          
+          # Télécharge l'artefact
+          # Assurez-vous que l'ID du run et le chemin sont corrects
           mlflow artifacts download \
-            --run-id 48e8413cd9ff4bdaa456248f34ca7df8 \
-            --artifact-path random_forest_model_2/model.pkl \
-            --dst-path models/random_forest_model
+            --run-id 45a4926c40bf4b658e5d7a14a70f184d \
+            --artifact-path model/model.pkl \
+            --dst-path models
+            
+          # Vérifie que le fichier a bien été téléchargé
+          echo "Contenu du dossier models après téléchargement:"
+          ls -R models
 
-      - name: Log in to DockerHub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            --tag arthur03/mlops-exercise:${{ github.sha }} \
-            .
-
-      - name: Push to DockerHub
-        run: |
-          docker push arthur03/mlops-exercise:${{ github.sha }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          # Le nom de l'image sera votre_user/votre_repo:latest et votre_user/votre_repo:commit_sha
+          tags: |
+            paulker194/${{ github.event.repository.name }}:latest
+            paulker194/${{ github.event.repository.name }}:${{ github.sha }}
