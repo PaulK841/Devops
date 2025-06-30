@@ -33,7 +33,7 @@ jobs:
           # Télécharge l'artefact
           # Assurez-vous que l'ID du run et le chemin sont corrects
           mlflow artifacts download \
-            --run-id 45a4926c40bf4b658e5d7a14a70f184d \
+            --run-id 346b94ba571844dc9f23b407e1c3448e \
             --artifact-path model/model.pkl \
             --dst-path models
             
